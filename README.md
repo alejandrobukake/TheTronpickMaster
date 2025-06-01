@@ -31,4 +31,4 @@ Automated bot for TronPick.io platform with manual withdrawal system.
 ## Requirements
 - Ubuntu 20.04+
 - Node.js 18+
-- TigerVNC Viewer (for remote access)
+- TigerVNC Viewer (for remote access)"# TheTronpickMaster" 
