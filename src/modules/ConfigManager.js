@@ -63,13 +63,17 @@ async function getConfigFromUser() {
         logger.info('No referral code provided.');
     }
 
-    config.withdrawalAddress = await askQuestion(rl, 'Enter your TRX wallet address for withdrawals: ');
-    // Fixed withdrawal threshold
-    // config.withdrawalThreshold = 16.638300; // For compatibility although not actively used
-    // logger.info('Fixed withdrawal threshold: 16.638300 TRX (will keep 1.638300 TRX after withdrawal)');
+    config.withdrawalAddress = await askQuestion(rl, 'Enter your TRX wallet address for manual withdrawals: ');
+    if (!config.withdrawalAddress) {
+        throw new Error('Withdrawal address cannot be empty.');
+    }
+    // Basic TRX address validation
+    if (!config.withdrawalAddress.startsWith('T') || config.withdrawalAddress.length !== 34) {
+        logger.warn('Warning: The provided address may not be a valid TRX address. Please verify.');
+    }
 
     // --- VPS Identifier ---
-    config.vpsIdentifier = await askQuestion(rl, 'Enter a unique identifier for this VPS (letters/numbers only): ');
+    config.vpsIdentifier = await askQuestion(rl, 'Enter a unique identifier for this VPS (letters/numbers only, e.g., GCP-PROD-01): ');
     if (!config.vpsIdentifier || !/^[a-zA-Z0-9_-]+$/.test(config.vpsIdentifier)) {
         logger.info('Invalid or no VPS identifier provided. Generating automatically...');
         config.vpsIdentifier = `VPS_${Date.now().toString().slice(-6)}`;
@@ -117,8 +121,7 @@ async function getConfigFromUser() {
     logger.info(`Referral Code: ${config.referrerCode || 'None'}`);
     logger.info(`IMAP Host: ${config.imapHost}:${config.imapPort}`);
     logger.info(`Tronpick Password: [CONFIGURED]`);
-    logger.info(`Withdrawal Address: ${config.withdrawalAddress}`);
-    // logger.info(`Withdrawal Threshold: 16.638300 TRX (fixed, will keep 1.638300 TRX)`);
+    logger.info(`Manual Withdrawal Address: ${config.withdrawalAddress}`);
     logger.info(`VPS ID: ${config.vpsIdentifier}`);
     logger.info(`Telegram Bot Token: ${config.telegramBotToken ? '[CONFIGURED]' : 'Not configured'}`);
     logger.info(`System Channel ID: ${config.telegramSystemChannelId ? '[CONFIGURED]' : 'Not configured'}`);

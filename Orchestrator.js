@@ -17,31 +17,30 @@ import { notifySystemEvent, notifyMoneyEvent, SystemEventType, MoneyEventType, i
 // --- Application State Definitions ---
 // Defines the different states the bot can go through
 const State = {
-    INITIALIZING: 'INITIALIZING', // Initial state at startup
-    NEEDS_CONFIG: 'NEEDS_CONFIG', // Needs to request data from user
-    LOADING_STATE: 'LOADING_STATE', // Loading saved state from file
-    LAUNCHING_BROWSER: 'LAUNCHING_BROWSER', // Starting the browser instance
-    CHECKING_SESSION: 'CHECKING_SESSION', // Checking if there's an active web session
-    NEEDS_LOGIN: 'NEEDS_LOGIN', // No session, needs to try login
-    CHECKING_EMAIL_VERIFICATION_STATUS: 'CHECKING_EMAIL_VERIFICATION_STATUS', // Check if email needs verification (after login/active session)
-    NEEDS_SIGNUP: 'NEEDS_SIGNUP', // If login fails due to incorrect credentials/non-existent account
-    NEEDS_EMAIL_VERIFICATION_REGISTRATION: 'NEEDS_EMAIL_VERIFICATION_REGISTRATION', // Needs to verify email after registration
-    AWAITING_EMAIL_LINK: 'AWAITING_EMAIL_LINK', // New state: Waiting to receive the email after clicking verify
-    NEEDS_BONUS_CLAIM: 'NEEDS_BONUS_CLAIM', // Needs to claim bonus after verifying email
-    SAVING_SETUP_STATE: 'SAVING_SETUP_STATE', // Saving that the initial setup (signup+verif+bonus) was completed
-    READY_TO_PLAY: 'READY_TO_PLAY', // Ready to start the main game/faucet loop
-    PLAYING_ROULETTE: 'PLAYING_ROULETTE', // Running roulette cycles
-    PAUSED_FOR_FAUCET: 'PAUSED_FOR_FAUCET', // Temporarily stopped to claim hourly faucet
-    CLAIMING_HOURLY_FAUCET: 'CLAIMING_HOURLY_FAUCET', // Running hourly faucet claim
-    CHECKING_WITHDRAWAL: 'CHECKING_WITHDRAWAL', // Checking if withdrawal threshold was reached
-    // --- nuevos estados para retiro manual ---
-    WITHDRAWAL_THRESHOLD_REACHED: 'WITHDRAWAL_THRESHOLD_REACHED', // Balance reached withdrawal threshold
-    PAUSED_FOR_MANUAL_WITHDRAWAL: 'PAUSED_FOR_MANUAL_WITHDRAWAL', // System paused waiting for manual withdrawal
-    RESUMING_AFTER_WITHDRAWAL: 'RESUMING_AFTER_WITHDRAWAL', // Resuming after manual withdrawal detected
-    AUTHENTICATION_COMPLETE: 'AUTHENTICATION_COMPLETE', // <-- Temporary state to stop after auth
-    ERROR: 'ERROR', // Critical error state that stops the bot
-    STOPPING: 'STOPPING', // Orderly shutdown process
-    STOPPED: 'STOPPED' // The bot has completely stopped
+    INITIALIZING: 'INITIALIZING',
+    NEEDS_CONFIG: 'NEEDS_CONFIG',
+    LOADING_STATE: 'LOADING_STATE',
+    LAUNCHING_BROWSER: 'LAUNCHING_BROWSER',
+    CHECKING_SESSION: 'CHECKING_SESSION',
+    NEEDS_LOGIN: 'NEEDS_LOGIN',
+    CHECKING_EMAIL_VERIFICATION_STATUS: 'CHECKING_EMAIL_VERIFICATION_STATUS',
+    NEEDS_SIGNUP: 'NEEDS_SIGNUP',
+    NEEDS_EMAIL_VERIFICATION_REGISTRATION: 'NEEDS_EMAIL_VERIFICATION_REGISTRATION',
+    AWAITING_EMAIL_LINK: 'AWAITING_EMAIL_LINK',
+    NEEDS_BONUS_CLAIM: 'NEEDS_BONUS_CLAIM',
+    SAVING_SETUP_STATE: 'SAVING_SETUP_STATE',
+    READY_TO_PLAY: 'READY_TO_PLAY',
+    PLAYING_ROULETTE: 'PLAYING_ROULETTE',
+    PAUSED_FOR_FAUCET: 'PAUSED_FOR_FAUCET',
+    CLAIMING_HOURLY_FAUCET: 'CLAIMING_HOURLY_FAUCET',
+    // --- Manual withdrawal states ---
+    WITHDRAWAL_THRESHOLD_REACHED: 'WITHDRAWAL_THRESHOLD_REACHED',
+    PAUSED_FOR_MANUAL_WITHDRAWAL: 'PAUSED_FOR_MANUAL_WITHDRAWAL',
+    RESUMING_AFTER_WITHDRAWAL: 'RESUMING_AFTER_WITHDRAWAL',
+    AUTHENTICATION_COMPLETE: 'AUTHENTICATION_COMPLETE',
+    ERROR: 'ERROR',
+    STOPPING: 'STOPPING',
+    STOPPED: 'STOPPED'
 };
 
 // --- Global State and Control Variables ---
@@ -97,43 +96,43 @@ async function loadStateFromFile() {
     try {
         logger.info(`Loading state from ${STATE_FILE_PATH}...`);
         const data = await fs.readFile(STATE_FILE_PATH, 'utf-8');
-        // Overwrite default state with loaded state
         appState = JSON.parse(data);
-        // Convert saved date string back to numeric timestamp if it exists
         if (appState.lastFaucetClaimTime) {
             appState.lastFaucetClaimTime = new Date(appState.lastFaucetClaimTime).getTime();
         }
         if (appState.lastBonusClaimTime) {
             appState.lastBonusClaimTime = new Date(appState.lastBonusClaimTime).getTime();
         }
-        // Initialize verificationAttempts if it doesn't exist
         if (appState.verificationAttempts === undefined) {
             appState.verificationAttempts = 0;
         }
-        // Initialize roulette-related fields if they don't exist
         if (appState.rouletteCycles === undefined) {
             appState.rouletteCycles = 0;
         }
         if (appState.totalPnL === undefined) {
             appState.totalPnL = 0;
         }
+        // Initialize withdrawal control variables if they don't exist
+        if (appState.withdrawalThresholdBalance !== undefined) {
+            withdrawalThresholdBalance = appState.withdrawalThresholdBalance;
+        }
+        if (appState.systemPausedForWithdrawal !== undefined) {
+            systemPausedForWithdrawal = appState.systemPausedForWithdrawal;
+        }
         logger.info('State loaded successfully.');
-        // Show loaded state
         logger.info(` - Initial Setup Complete: ${appState.isInitialSetupComplete}`);
         logger.info(` - Last Faucet Claimed: ${appState.lastFaucetClaimTime ? new Date(appState.lastFaucetClaimTime).toLocaleString() : 'Never'}`);
         logger.info(` - Last Bonus Claimed: ${appState.lastBonusClaimTime ? new Date(appState.lastBonusClaimTime).toLocaleString() : 'Never'}`);
         logger.info(` - Verification Attempts: ${appState.verificationAttempts}`);
         logger.info(` - Roulette Cycles: ${appState.rouletteCycles}`);
         logger.info(` - Total PnL: ${appState.totalPnL}`);
+        logger.info(` - Withdrawal Threshold Balance: ${withdrawalThresholdBalance || 'Not set'}`);
+        logger.info(` - System Paused For Withdrawal: ${systemPausedForWithdrawal}`);
     } catch (error) {
-        // If the file doesn't exist, it's normal on first run
         if (error.code === 'ENOENT') {
             logger.warn('State file (appState.json) not found. Assuming initial state.');
-            // Default appState values are maintained
         } else {
-            // Other error reading the file
             logger.error(`Error loading state from file: ${error.message}`);
-            // We could throw an error here to stop if loading fails
         }
     }
 }
@@ -144,15 +143,15 @@ async function loadStateFromFile() {
 async function saveStateToFile() {
     try {
         logger.debug(`Saving state to ${STATE_FILE_PATH}...`);
-        // Create an object with the state to save, converting timestamps to ISO strings
         const stateToSave = {
             ...appState,
             lastFaucetClaimTime: appState.lastFaucetClaimTime ? new Date(appState.lastFaucetClaimTime).toISOString() : null,
             lastBonusClaimTime: appState.lastBonusClaimTime ? new Date(appState.lastBonusClaimTime).toISOString() : null,
-            // No need to convert rouletteCycles or totalPnL - they're already numbers
+            // Add withdrawal control state
+            withdrawalThresholdBalance: withdrawalThresholdBalance,
+            systemPausedForWithdrawal: systemPausedForWithdrawal,
         };
-        // Convert to formatted JSON and write to file
-        const dataToSave = JSON.stringify(stateToSave, null, 2); // null, 2 for pretty indentation
+        const dataToSave = JSON.stringify(stateToSave, null, 2);
         await fs.writeFile(STATE_FILE_PATH, dataToSave, 'utf-8');
         logger.debug('State saved successfully.');
     } catch (error) {
@@ -502,7 +501,7 @@ async function goToSettingsAndClickVerify() {
 /**
  * Attempts to claim the hourly faucet with extended retry logic
  * and explicit 20-second wait for CAPTCHA resolution.
- * @returns {Promise<boolean>} True if the claim was successful, false otherwise
+ * @returns {Promise<boolean>}
  */
 async function attemptHourlyFaucetClaim() {
     logger.info("Starting hourly faucet claim process with 20-second CAPTCHA wait...");
@@ -787,6 +786,52 @@ async function checkAndNotifyBalanceChanges() {
             }
         }
     }
+}
+
+// Add function to detect manual withdrawal
+/**
+ * Detects if a manual withdrawal has been performed by comparing current balance
+ * with the balance when withdrawal threshold was reached
+ * @returns {Promise<boolean>} True if manual withdrawal detected, false otherwise
+ */
+async function detectManualWithdrawal() {
+    if (!systemPausedForWithdrawal || withdrawalThresholdBalance === null) {
+        return false;
+    }
+    
+    const currentBalance = await checkBalance();
+    const balanceReduction = withdrawalThresholdBalance - currentBalance;
+    
+    // Consider it a withdrawal if balance decreased by at least 10 TRX
+    const WITHDRAWAL_DETECTION_THRESHOLD = 10.0;
+    
+    if (balanceReduction >= WITHDRAWAL_DETECTION_THRESHOLD) {
+        logger.info(`Manual withdrawal detected! Balance reduced from ${withdrawalThresholdBalance} to ${currentBalance} TRX (reduction: ${balanceReduction.toFixed(6)} TRX)`);
+        
+        // Send notification about detected withdrawal
+        try {
+            if (isTelegramConfigured()) {
+                await notifyMoneyEvent(MoneyEventType.WITHDRAWAL_SUCCESS, {
+                    amount: balanceReduction,
+                    newBalance: currentBalance,
+                    address: getConfig().withdrawalAddress
+                });
+                logger.info("Manual withdrawal notification sent to Telegram.");
+            }
+        } catch (notifyError) {
+            logger.error(`Error sending withdrawal notification: ${notifyError.message}`);
+        }
+        
+        // Reset withdrawal control variables
+        systemPausedForWithdrawal = false;
+        withdrawalThresholdBalance = null;
+        manualWithdrawalDetected = true;
+        
+        return true;
+    }
+    
+    logger.debug(`No withdrawal detected. Current balance: ${currentBalance}, threshold balance: ${withdrawalThresholdBalance}, reduction: ${balanceReduction.toFixed(6)}`);
+    return false;
 }
 
 // --- Main State Machine Logic ---
@@ -1190,13 +1235,13 @@ async function runStateMachine() {
                         logger.info(`Roulette cycle completed: ${rouletteResult.message}`);
                         // Add a short delay between cycles (2-5 seconds)
                         const waitTime = 2000 + Math.floor(Math.random() * 2000);
-                        logger.info(`Esperando ${(waitTime / 1000).toFixed(1)} seg para el siguiente ciclo...`);
+                        logger.info(`Waiting ${(waitTime / 1000).toFixed(1)} seconds for next cycle...`);
                         await delay(waitTime);
                         
                         // Stay in PLAYING_ROULETTE state
                         currentState = State.PLAYING_ROULETTE;
                     } else {
-                        logger.error(`Fallo en executeRouletteCycle: ${rouletteResult.message}.`);
+                        logger.error(`Failure in executeRouletteCycle: ${rouletteResult.message}.`);
                         
                         // Reset internal RoulettePlayer state before continuing
                         resetState();
@@ -1204,9 +1249,9 @@ async function runStateMachine() {
                         consecutiveRouletteErrors = 0;
                         
                         // If error is related to too many failures, pause before trying again
-                        logger.warn("Pausando la ruleta por 5 minutos debido a errores repetidos...");
+                        logger.warn("Pausing roulette for 5 minutes due to repeated errors...");
                         await delay(5 * 60 * 1000); // 5 minute pause
-                        logger.info("Reanudando juego de ruleta después de la pausa.");
+                        logger.info("Resuming roulette gameplay after pause.");
                         
                         // Try again after the pause
                         currentState = State.PLAYING_ROULETTE;
@@ -1216,7 +1261,7 @@ async function runStateMachine() {
                         const currentBalance = await checkBalance();
                         await checkAndNotifyBalanceChange(currentBalance);
                     } catch (balanceCheckError) {
-                        logger.warn(`Error al verificar balance para notificaciones: ${balanceCheckError.message}`);
+                        logger.warn(`Error checking balance for notifications: ${balanceCheckError.message}`);
                     }
 
                     if (rouletteResult.success && rouletteResult.message && rouletteResult.message.includes('outcome: loss')) {
@@ -1225,10 +1270,10 @@ async function runStateMachine() {
                                 await notifySystemEvent(SystemEventType.LEVEL_13_LOSS, {
                                     pnl: getCurrentPnL()
                                 });
-                                logger.info("Notificación de pérdida nivel 13 enviada a Telegram.");
+                                logger.info("Level 13 loss notification sent to Telegram.");
                             }
                         } catch (telegramError) {
-                            logger.warn(`No se pudo enviar notificación de pérdida nivel 13: ${telegramError.message}`);
+                            logger.warn(`Could not send level 13 loss notification: ${telegramError.message}`);
                         }
                     }
 
@@ -1283,21 +1328,6 @@ async function runStateMachine() {
                         logger.error(`Error during hourly faucet claim: ${error.message}`);
                         // Resume roulette gameplay despite error
                         rouletteStartTime = Date.now();
-                        currentState = State.PLAYING_ROULETTE;
-                    }
-                    break;
-                
-                case State.CHECKING_WITHDRAWAL:
-                    logger.info("Checking if we've reached withdrawal threshold...");
-                    
-                    // Check if balance has reached withdrawal threshold
-                    if (await isReadyForWithdrawal()) {
-                        logger.info("Withdrawal threshold reached. Pausing for manual withdrawal...");
-                        withdrawalThresholdBalance = await checkBalance();
-                        systemPausedForWithdrawal = true;
-                        currentState = State.WITHDRAWAL_THRESHOLD_REACHED;
-                    } else {
-                        logger.info("Withdrawal threshold not reached yet. Continuing to play.");
                         currentState = State.PLAYING_ROULETTE;
                     }
                     break;

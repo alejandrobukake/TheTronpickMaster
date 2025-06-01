@@ -1,42 +1,42 @@
 #!/bin/bash
 
-# Script para configurar el entorno para TronpickMaster en Ubuntu
+# Script to configure the environment for TronpickMaster on Ubuntu
 
-echo "--- Iniciando configuración del entorno para TronpickMaster ---"
+echo "--- Starting TronpickMaster environment setup ---"
 
-# Asegurarse de que el script se detenga si un comando falla
+# Ensure the script stops if any command fails
 set -e
 
-# 1. Crear directorios necesarios
-echo "--> Creando directorios necesarios..."
+# 1. Create necessary directories
+echo "--> Creating necessary directories..."
 mkdir -p screenshots temp user-data
 
-# 2. Actualizar lista de paquetes
-echo "--> Actualizando lista de paquetes..."
+# 2. Update package list
+echo "--> Updating package list..."
 sudo apt-get update -y
 
-# 3. Instalar dependencias básicas (curl, si no está)
-echo "--> Instalando curl y otras dependencias básicas..."
+# 3. Install basic dependencies (curl, if not present)
+echo "--> Installing curl and other basic dependencies..."
 sudo apt-get install curl wget git build-essential -y
 
-# 4. Instalar Node.js v18 usando NodeSource
-echo "--> Configurando repositorio NodeSource para Node.js v18..."
+# 4. Install Node.js v18 using NodeSource
+echo "--> Setting up NodeSource repository for Node.js v18..."
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-echo "--> Instalando Node.js v18..."
+echo "--> Installing Node.js v18..."
 sudo apt-get install nodejs -y
-echo "--> Verificando versiones instaladas:"
+echo "--> Verifying installed versions:"
 node -v
 npm -v
 
-# 5. Instalar Xvfb (necesario para headless:false en servidor)
-echo "--> Instalando Xvfb..."
+# 5. Install Xvfb (needed for headless:false on server)
+echo "--> Installing Xvfb..."
 sudo apt-get install xvfb -y
 
-# 6. Instalar Chromium Browser
-echo "--> Instalando Chromium Browser..."
+# 6. Install Chromium Browser
+echo "--> Installing Chromium Browser..."
 sudo apt-get install chromium-browser -y
-echo "--> Verificando instalación de Chromium:"
-which chromium-browser || echo "ADVERTENCIA: chromium-browser no encontrado en PATH después de la instalación."
+echo "--> Verifying Chromium installation:"
+which chromium-browser || echo "WARNING: chromium-browser not found in PATH after installation."
 
 # 7. Install TigerVNC Server and minimal desktop environment
 echo "--> Installing TigerVNC Server and desktop environment..."
@@ -75,7 +75,7 @@ sudo ufw --force enable
 
 # 11. Start VNC server
 echo "--> Starting VNC server..."
-sudo -u ubuntu vncserver :1 -geometry 1024x768 -depth 24
+sudo -u ubuntu vncserver :1 -geometry 1024x768 -depth 24 || echo "VNC server start failed, but service will handle it"
 
 # 12. Create VNC service for auto-start
 sudo tee /etc/systemd/system/vncserver@.service > /dev/null << 'EOF'
@@ -101,37 +101,53 @@ EOF
 sudo systemctl daemon-reload
 sudo systemctl enable vncserver@1.service
 
-# 7. Instalar dependencias específicas del proyecto
-echo "--> Instalando dependencias específicas del proyecto..."
+# Verify VNC service status
+echo "--> Verifying VNC service status..."
+sudo systemctl status vncserver@1.service --no-pager || echo "VNC service not running yet (normal on first setup)"
+
+# 7. Install project-specific dependencies
+echo "--> Installing project-specific dependencies..."
 npm install puppeteer-real-browser imapflow winston quoted-printable cheerio mailparser node-fetch@3
 
-# 8. Configurar permisos de ejecución
-echo "--> Configurando permisos de ejecución..."
+# 8. Set execution permissions
+echo "--> Setting execution permissions..."
 chmod +x index.js
 
-# 9. Verificar estructura de directorios de src
-echo "--> Verificando estructura de directorios de src..."
+# 9. Verify src directory structure
+echo "--> Verifying src directory structure..."
 mkdir -p src/modules src/utils
 
-# 10. Mostrar resumen
-echo "--- Configuración del entorno completada exitosamente ---"
-echo "Estructura del proyecto:"
+# 10. Show summary
+echo "--- Environment setup completed successfully ---"
+echo "Project structure:"
 ls -la
 echo ""
-echo "Dependencias Node.js instaladas:"
+echo "Node.js dependencies installed:"
 npm list --depth=0
 echo ""
-echo "=== INFORMACIÓN DE CONEXIÓN VNC ==="
-echo "IP del Servidor VNC: $SERVER_IP"
-echo "Puerto VNC: 5901"
-echo "Contraseña VNC: 383360"
-echo "Cadena de conexión: $SERVER_IP:5901"
-echo "=== PARA CONECTAR ==="
-echo "Usa TigerVNC Viewer o cualquier cliente VNC"
-echo "Dirección: $SERVER_IP:1"
-echo "Contraseña: 383360"
+echo "=== VNC CONNECTION INFORMATION ==="
+echo "VNC Server IP: $SERVER_IP"
+echo "VNC Port: 5901"
+echo "VNC Password: 383360"
+echo "Connection string: $SERVER_IP:5901"
+echo "=== TO CONNECT ==="
+echo "Use TigerVNC Viewer or any VNC client"
+echo "Address: $SERVER_IP:1"
+echo "Password: 383360"
 echo ""
-echo "Recuerda ejecutar el bot con: node index.js"
+echo "Remember to run the bot with: node index.js"
 echo "-----------------------------------------------------------"
+
+echo ""
+echo "=== NEXT STEPS ==="
+echo "1. Test VNC connection from your local machine:"
+echo "   - Use TigerVNC Viewer"
+echo "   - Connect to: $SERVER_IP:1"
+echo "   - Password: 383360"
+echo "2. Run the bot:"
+echo "   - cd to project directory"
+echo "   - Run: node index.js"
+echo "   - Follow configuration prompts"
+echo ""
 
 exit 0
