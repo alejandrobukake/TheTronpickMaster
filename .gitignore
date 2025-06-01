@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Configuration files (contains sensitive data)
+config.json
+
+# State files
+appState.json
+
+# Screenshots and temporary files
+screenshots/
+temp/
+user-data/
+
+# Logs
+*.log
+
+# Environment variables
+.env
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
