@@ -4,15 +4,15 @@ import fs from 'fs/promises'; // For reading/writing state
 import path from 'path';     // For file path handling
 import process from 'process'; // For handling shutdown (Ctrl+C)
 import logger from './src/utils/logger.js'; // Our configured logger
-import { getConfigFromUser, getConfig } from './modules/ConfigManager.js'; // For getting configuration
-import { launchBrowser, closeBrowser, getPage, navigateTo } from './modules/BrowserManager.js'; // For browser control
-import { signUp, signIn } from './modules/AuthHandler.js'; // Import both authentication functions
-import { verifyEmail, VerificationType } from './modules/EmailVerifier.js'; // For email verification
-import { claimBonusFaucet, claimHourlyFaucet, hideSurveysSection, getAvailableBonusSpins } from './modules/FaucetClaimer.js'; // Import enhanced faucet functions
-import { playOneCycle, handleSeedAndRefresh, resetState, getErrorCounts, getCurrentPnL, resetPnL } from './modules/RoulettePlayer.js'; // For playing roulette
+import { getConfigFromUser, getConfig } from './src/modules/ConfigManager.js';
+import { launchBrowser, closeBrowser, getPage, navigateTo } from './src/modules/BrowserManager.js';
+import { signUp, signIn } from './src/modules/AuthHandler.js';
+import { verifyEmail, VerificationType } from './src/modules/EmailVerifier.js';
+import { claimBonusFaucet, claimHourlyFaucet, hideSurveysSection, getAvailableBonusSpins } from './src/modules/FaucetClaimer.js';
+import { playOneCycle, handleSeedAndRefresh, resetState, getErrorCounts, getCurrentPnL, resetPnL } from './src/modules/RoulettePlayer.js';
 // import { initiateWithdrawal, finalizeWithdrawal } from './modules/WithdrawalHandler.js'; // Stubs for withdrawals
-import { delay } from './utils/helpers.js'; // Pause function
-import { notifySystemEvent, notifyMoneyEvent, SystemEventType, MoneyEventType, isTelegramConfigured } from './modules/TelegramNotifier.js';
+import { delay } from './src/utils/helpers.js'; // Pause function
+import { notifySystemEvent, notifyMoneyEvent, SystemEventType, MoneyEventType, isTelegramConfigured } from './src/modules/TelegramNotifier.js';
 
 // --- Application State Definitions ---
 // Defines the different states the bot can go through
