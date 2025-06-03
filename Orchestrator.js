@@ -3,7 +3,7 @@
 import fs from 'fs/promises'; // For reading/writing state
 import path from 'path';     // For file path handling
 import process from 'process'; // For handling shutdown (Ctrl+C)
-import logger from './utils/logger.js'; // Our configured logger
+import logger from './src/utils/logger.js'; // Our configured logger
 import { getConfigFromUser, getConfig } from './modules/ConfigManager.js'; // For getting configuration
 import { launchBrowser, closeBrowser, getPage, navigateTo } from './modules/BrowserManager.js'; // For browser control
 import { signUp, signIn } from './modules/AuthHandler.js'; // Import both authentication functions
